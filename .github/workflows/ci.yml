@@ -18,8 +18,8 @@ concurrency:
 jobs:
   macos:
     name: macOS — сборка и тесты
-    # macos-15-intel: у arm64-раннеров сейчас очереди; приложение всё равно собирается универсальным.
-    runs-on: macos-15-intel
+    # Приложение собирается универсальным (arm64 + x86_64) через ARCHS.
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
         with:
