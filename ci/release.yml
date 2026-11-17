@@ -1,0 +1,86 @@
+# Сборка обеих версий и релиз на GitHub. Работает из .github/workflows/ (см. ci/README.md).
+#   git tag v0.6.0 && git push origin v0.6.0   → собрать, создать релиз и приложить файлы
+#   Actions → Release → Run workflow           → только собрать (файлы — в артефактах запуска)
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  macos:
+    name: macOS
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Сборка Ottisk.app (Command Line Tools, ad-hoc подпись)
+        working-directory: macos
+        run: |
+          swift --version
+          ./build-app.sh
+      - name: DMG и ZIP
+        working-directory: macos
+        run: |
+          VERSION="$(tr -d '[:space:]' < VERSION)"
+          mkdir -p out stage
+          ditto -c -k --sequesterRsrc --keepParent dist/Ottisk.app "out/Ottisk-macOS-$VERSION.zip"
+          cp -R dist/Ottisk.app stage/
+          ln -s /Applications stage/Applications
+          hdiutil create -volname "Ottisk" -srcfolder stage -ov -format UDZO "out/Ottisk-macOS-$VERSION.dmg"
+          ls -la out
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos
+          path: macos/out/*
+          if-no-files-found: error
+
+  windows:
+    name: Windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Тесты, publish, установщик NSIS
+        shell: bash
+        working-directory: windows
+        run: |
+          if ! command -v makensis >/dev/null; then choco install nsis -y --no-progress; fi
+          export MAKENSIS="$(command -v makensis || echo '/c/Program Files (x86)/NSIS/makensis.exe')"
+          ./build.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: |
+            windows/dist/Ottisk-Setup-*.exe
+            windows/dist/Ottisk-Windows-portable-*.exe
+          if-no-files-found: error
+
+  release:
+    name: GitHub Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [macos, windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: assets
+          merge-multiple: true
+      - name: Создать или обновить релиз
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          ls -la assets
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$TAG" assets/* --clobber --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create "$TAG" assets/* --repo "$GITHUB_REPOSITORY" --title "Оттиск ${TAG#v}" --generate-notes
+          fi

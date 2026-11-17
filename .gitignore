@@ -1,0 +1,26 @@
+# macOS / Swift
+.build/
+.swiftpm/
+*.xcodeproj/
+xcuserdata/
+DerivedData/
+.DS_Store
+macos/dist/
+
+# Windows / .NET
+bin/
+obj/
+*.user
+windows/dist/
+
+# Сборки и архивы — только в Releases, не в git
+*.zip
+*.dmg
+*.exe
+*.app/
+
+# Прочее
+__pycache__/
+*.pyc
+.env
+.env.*
