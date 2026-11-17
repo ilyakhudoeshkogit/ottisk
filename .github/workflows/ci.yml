@@ -18,7 +18,7 @@ concurrency:
 jobs:
   macos:
     name: macOS — сборка и тесты
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
         with:
