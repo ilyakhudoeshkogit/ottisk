@@ -15,7 +15,7 @@ jobs:
   macos:
     name: macOS
     # Приложение собирается универсальным (arm64 + x86_64) через ARCHS.
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
         with:

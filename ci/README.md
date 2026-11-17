@@ -3,7 +3,7 @@
 Workflow лежат в [`.github/workflows/`](../.github/workflows). Для публичного репозитория раннеры GitHub бесплатны.
 
 - **`ci.yml`** — на каждый push в `main` (кроме правок только в `.md`/`docs`) и на pull request:
-  - macOS (`macos-15`, приложение универсальное: arm64 + x86_64): `swift test` для `OttiskCore`, затем сборка `Ottisk.app` через `build-app.sh`
+  - macOS (`macos-26`, приложение универсальное: arm64 + x86_64): `swift test` для `OttiskCore`, затем сборка `Ottisk.app` через `build-app.sh`
     **только Command Line Tools** (как на Mac без Xcode — поэтому в коде нельзя `@State`/`#Preview`,
     вместо `@State` есть `@LocalState`);
   - Windows (`windows-latest`): `dotnet test`.
