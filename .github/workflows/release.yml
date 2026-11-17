@@ -14,7 +14,8 @@ permissions:
 jobs:
   macos:
     name: macOS
-    runs-on: macos-26
+    # macos-15-intel: у arm64-раннеров сейчас очереди; приложение всё равно собирается универсальным.
+    runs-on: macos-15-intel
     steps:
       - uses: actions/checkout@v4
         with:
@@ -29,7 +30,7 @@ jobs:
         working-directory: macos
         run: |
           swift --version
-          ./build-app.sh
+          ARCHS="arm64 x86_64" ./build-app.sh
       - name: DMG и ZIP
         working-directory: macos
         run: |

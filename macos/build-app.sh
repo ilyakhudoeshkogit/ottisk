@@ -3,6 +3,7 @@
 #   ./build-app.sh            собрать dist/Ottisk.app
 #   ./build-app.sh --install  собрать и положить в ~/Applications
 #   ./build-app.sh --open     собрать и сразу запустить
+#   ARCHS="arm64 x86_64" ./build-app.sh   универсальное приложение (Apple Silicon + Intel)
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -27,14 +28,29 @@ VERSION="$(cat VERSION 2>/dev/null || echo 0.1.0)"
 BUILD="$(git rev-list --count HEAD 2>/dev/null || echo 1)"
 APP="dist/Ottisk.app"
 
-echo "→ swift build -c release (версия $VERSION, сборка $BUILD)"
-swift build -c release --product Ottisk
-BIN_DIR="$(swift build -c release --show-bin-path)"
+ARCHS="${ARCHS:-}"
+BIN_OUT="$(mktemp -d)/Ottisk"
+if [[ -z "$ARCHS" ]]; then
+  echo "→ swift build -c release (версия $VERSION, сборка $BUILD)"
+  swift build -c release --product Ottisk
+  cp "$(swift build -c release --show-bin-path)/Ottisk" "$BIN_OUT"
+else
+  # Каждая архитектура собирается отдельно (так работает и без Xcode), потом склеивается lipo.
+  SLICES=()
+  for arch in $ARCHS; do
+    triple="$arch-apple-macosx14.0"
+    echo "→ swift build -c release --triple $triple (версия $VERSION, сборка $BUILD)"
+    swift build -c release --product Ottisk --triple "$triple"
+    SLICES+=("$(swift build -c release --triple "$triple" --show-bin-path)/Ottisk")
+  done
+  lipo -create "${SLICES[@]}" -output "$BIN_OUT"
+  lipo -info "$BIN_OUT"
+fi
 
 echo "→ собираю $APP"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
-cp "$BIN_DIR/Ottisk" "$APP/Contents/MacOS/Ottisk"
+cp "$BIN_OUT" "$APP/Contents/MacOS/Ottisk"
 sed -e "s/__VERSION__/$VERSION/" -e "s/__BUILD__/$BUILD/" Resources/Info.plist.template > "$APP/Contents/Info.plist"
 printf 'APPL????' > "$APP/Contents/PkgInfo"
 # Локализация: ru (основной) и en. SwiftUI ищет строки в Bundle.main.

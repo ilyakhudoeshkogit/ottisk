@@ -18,7 +18,8 @@ concurrency:
 jobs:
   macos:
     name: macOS — сборка и тесты
-    runs-on: macos-26
+    # macos-15-intel: у arm64-раннеров сейчас очереди; приложение всё равно собирается универсальным.
+    runs-on: macos-15-intel
     steps:
       - uses: actions/checkout@v4
         with:
@@ -35,7 +36,7 @@ jobs:
           xcode-select -p
           swift --version
           rm -rf .build
-          ./build-app.sh
+          ARCHS="arm64 x86_64" ./build-app.sh
 
   windows:
     name: Windows — тесты
