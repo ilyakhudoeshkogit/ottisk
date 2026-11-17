@@ -1,0 +1,50 @@
+# Проверка на каждый push в main и pull request: сборка и тесты обеих версий.
+name: CI
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ["**.md", "docs/**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  macos:
+    name: macOS — сборка и тесты
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Тесты OttiskCore (Xcode — в нём есть XCTest)
+        working-directory: macos
+        run: swift test
+      - name: Сборка Ottisk.app только Command Line Tools (как на Mac без Xcode)
+        working-directory: macos
+        run: |
+          if [ -d /Library/Developer/CommandLineTools/usr/bin ]; then
+            sudo xcode-select -s /Library/Developer/CommandLineTools
+          fi
+          xcode-select -p
+          swift --version
+          rm -rf .build
+          ./build-app.sh
+
+  windows:
+    name: Windows — тесты
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: dotnet test
+        working-directory: windows
+        run: dotnet test tests/Ottisk.Core.Tests

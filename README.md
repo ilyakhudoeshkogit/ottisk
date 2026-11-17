@@ -13,6 +13,7 @@
   <a href="https://github.com/ilyakhudoeshkogit/ottisk/releases/latest"><img src="https://img.shields.io/github/v/release/ilyakhudoeshkogit/ottisk?label=%D0%B2%D0%B5%D1%80%D1%81%D0%B8%D1%8F" alt="Последняя версия"></a>
   <img src="https://img.shields.io/badge/macOS-14%2B-black?logo=apple" alt="macOS 14+">
   <img src="https://img.shields.io/badge/Windows-10%20%7C%2011-0078D6?logo=windows" alt="Windows 10 и 11">
+  <a href="https://github.com/ilyakhudoeshkogit/ottisk/actions/workflows/ci.yml"><img src="https://github.com/ilyakhudoeshkogit/ottisk/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="MIT"></a>
 </p>
 
@@ -69,7 +70,7 @@ cd ottisk/macos
 
 - [`macos/`](macos): Swift Package, логика в `OttiskCore` (с тестами, идут и на Linux), приложение на SwiftUI + PDFKit. Подробно в [macos/README.md](macos/README.md).
 - [`windows/`](windows): .NET 8, логика в `Ottisk.Core` (xUnit-тесты), приложение на WPF, установщик NSIS. Подробно в [windows/README.md](windows/README.md).
-- [`ci/`](ci): workflow GitHub Actions, который по тегу `v*` собирает обе версии и прикладывает их к релизу. Пока не включён, как включить — в [ci/README.md](ci/README.md).
+- [`.github/workflows/`](.github/workflows): GitHub Actions. `ci.yml` на каждый push и PR прогоняет тесты и собирает Mac-версию только Command Line Tools; `release.yml` по тегу `v*` собирает обе версии и прикладывает их к релизу. Подробно в [ci/README.md](ci/README.md).
 
 Версии и изменения: [CHANGELOG.md](CHANGELOG.md).
 

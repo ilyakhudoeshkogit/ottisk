@@ -1,17 +1,25 @@
-# CI: сборка релиза
+# CI и релизы
 
-`release.yml` — workflow GitHub Actions: по тегу `v*` собирает Mac-версию на `macos-15`
-(`build-app.sh`, ad-hoc подпись, `.dmg` и `.zip`) и Windows-версию на `windows-latest`
-(тесты, publish, установщик NSIS), потом создаёт релиз и прикладывает файлы.
+Workflow лежат в [`.github/workflows/`](../.github/workflows). Для публичного репозитория раннеры GitHub бесплатны.
 
-Пока он лежит здесь и **не запускается**. Чтобы включить, перенеси его в `.github/workflows/`
-(через сайт GitHub: Add file → Create new file → `.github/workflows/release.yml`, вставить содержимое)
-или запушь токеном со scope `workflow`. Для публичного репозитория раннеры GitHub бесплатны.
+- **`ci.yml`** — на каждый push в `main` (кроме правок только в `.md`/`docs`) и на pull request:
+  - macOS (`macos-15`): `swift test` для `OttiskCore`, затем сборка `Ottisk.app` через `build-app.sh`
+    **только Command Line Tools** (как на Mac без Xcode — поэтому в коде нельзя `@State`/`#Preview`,
+    вместо `@State` есть `@LocalState`);
+  - Windows (`windows-latest`): `dotnet test`.
+- **`release.yml`** — по тегу `v*` (или вручную: Actions → Release → Run workflow, тогда только артефакты):
+  - macOS: `build-app.sh` (ad-hoc подпись) → `Ottisk-macOS-<версия>.dmg` и `.zip`;
+  - Windows: тесты, publish, NSIS → `Ottisk-Setup-<версия>.exe` и `Ottisk-Windows-portable-<версия>.exe`;
+  - затем создаёт релиз (текст — раздел версии из `CHANGELOG.md`) и прикладывает четыре файла.
 
-Выпуск версии после этого:
+## Выпуск версии
 
 ```bash
-# поднять версию в macos/VERSION и windows/VERSION (+ Version в windows/src/Ottisk.App/Ottisk.App.csproj), дописать CHANGELOG
+# 1. поднять версию: macos/VERSION, windows/VERSION, Version в windows/src/Ottisk.App/Ottisk.App.csproj,
+#    !define VERSION в windows/installer/Ottisk.nsi
+# 2. дописать CHANGELOG.md (раздел "## 0.6.1 — дата")
+git commit -am "Оттиск 0.6.1"
+git push
 git tag v0.6.1
-git push origin v0.6.1
+git push origin v0.6.1   # дальше всё делает Actions
 ```

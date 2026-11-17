@@ -1,4 +1,4 @@
-# Сборка обеих версий и релиз на GitHub. Работает из .github/workflows/ (см. ci/README.md).
+# Сборка обеих версий и релиз на GitHub (см. ci/README.md).
 #   git tag v0.6.0 && git push origin v0.6.0   → собрать, создать релиз и приложить файлы
 #   Actions → Release → Run workflow           → только собрать (файлы — в артефактах запуска)
 name: Release
@@ -19,7 +19,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Сборка Ottisk.app (Command Line Tools, ad-hoc подпись)
+      - name: Только Command Line Tools (как на Mac без Xcode)
+        run: |
+          if [ -d /Library/Developer/CommandLineTools/usr/bin ]; then
+            sudo xcode-select -s /Library/Developer/CommandLineTools
+          fi
+          xcode-select -p
+      - name: Сборка Ottisk.app (ad-hoc подпись)
         working-directory: macos
         run: |
           swift --version
@@ -69,6 +75,9 @@ jobs:
     needs: [macos, windows]
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: CHANGELOG.md
       - uses: actions/download-artifact@v4
         with:
           path: assets
@@ -79,8 +88,17 @@ jobs:
           TAG: ${{ github.ref_name }}
         run: |
           ls -la assets
+          VER="${TAG#v}"
+          # Текст релиза — раздел версии из CHANGELOG.md («## 0.6.1 — дата» до следующего «## »).
+          awk -v v="$VER" '$0 ~ "^## "v"( |$)" {f=1; next} f && /^## / {exit} f' CHANGELOG.md > notes.md
+          if [ ! -s notes.md ]; then echo "Оттиск $VER" > notes.md; fi
+          {
+            echo
+            echo "**Скачать:** Mac — \`Ottisk-macOS-$VER.dmg\` (или \`.zip\`), Windows — \`Ottisk-Setup-$VER.exe\` (или переносной \`Ottisk-Windows-portable-$VER.exe\`)."
+            echo "Как открыть неподписанное приложение — в [README](https://github.com/$GITHUB_REPOSITORY#установка)."
+          } >> notes.md
           if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             gh release upload "$TAG" assets/* --clobber --repo "$GITHUB_REPOSITORY"
           else
-            gh release create "$TAG" assets/* --repo "$GITHUB_REPOSITORY" --title "Оттиск ${TAG#v}" --generate-notes
+            gh release create "$TAG" assets/* --repo "$GITHUB_REPOSITORY" --title "Оттиск $VER" --notes-file notes.md --latest
           fi
