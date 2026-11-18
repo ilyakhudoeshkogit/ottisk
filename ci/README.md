@@ -23,3 +23,9 @@ git push
 git tag v0.6.1
 git push origin v0.6.1   # дальше всё делает Actions
 ```
+
+## Автоповтор macOS (`ci-retry.yml`)
+Если GitHub не выдал macOS-машину (задача отменена через ~15 минут с пометкой
+«The job was not acquired by Runner of type hosted»), workflow **CI retry** сам
+перезапускает упавшие задачи этого запуска — до 5 повторов. Настоящие ошибки
+сборки и ручные отмены он не трогает.

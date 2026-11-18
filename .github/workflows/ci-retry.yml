@@ -1,0 +1,38 @@
+# Автоповтор, когда GitHub не выдал macOS-машину.
+# В ноябре 2026 бесплатные macOS-раннеры часто перегружены: задача висит ~15 мин
+# и отменяется с пометкой «The job was not acquired by Runner of type hosted».
+# Код при этом не запускался, поэтому такие запуски просто перезапускаем
+# (только упавшие задачи, не больше 5 попыток). Настоящие ошибки сборки не трогаем.
+name: CI retry
+
+on:
+  workflow_run:
+    workflows: [CI, Release]
+    types: [completed]
+
+permissions:
+  actions: write
+  checks: read
+
+jobs:
+  retry:
+    if: github.event.workflow_run.conclusion != 'success' && github.event.workflow_run.run_attempt < 6
+    runs-on: ubuntu-latest
+    steps:
+      - name: Перезапустить, если задача не получила машину
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          set -euo pipefail
+          jobs=$(gh api "repos/$REPO/actions/runs/$RUN_ID/jobs" --jq '.jobs[] | select(.conclusion=="cancelled" or .conclusion=="failure") | select((.steps | length) == 0) | .id')
+          for id in $jobs; do
+            if gh api "repos/$REPO/check-runs/$id/annotations" --jq '.[].message' | grep -q "not acquired by Runner"; then
+              echo "Задача $id не получила машину — перезапускаю упавшие задачи запуска $RUN_ID"
+              sleep 60
+              gh api -X POST "repos/$REPO/actions/runs/$RUN_ID/rerun-failed-jobs"
+              exit 0
+            fi
+          done
+          echo "Настоящая ошибка или отмена вручную — не перезапускаю."
