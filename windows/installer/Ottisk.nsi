@@ -1,7 +1,7 @@
 ; Установщик «Оттиск» — один файл, без прав администратора, ставит в профиль пользователя.
 Unicode true
 !ifndef VERSION
-  !define VERSION "0.6.0"
+  !define VERSION "0.6.1"
 !endif
 !ifndef EXE
   !define EXE "..\dist\publish\Ottisk.exe"
